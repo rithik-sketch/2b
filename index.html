@@ -1,0 +1,90 @@
+
+<html ng-app="app">
+<head>
+    <title>Student Registration</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+</head>
+<body ng-controller="ctrl">
+
+<h2>Student Registration</h2>
+
+<form ng-submit="save()">
+    Name: <input type="text" ng-model="name" required>
+    Department: <input type="text" ng-model="dept" required>
+    <button ng-disabled="saving">Register</button>
+</form>
+<p>{{msg}}</p>
+
+<table border="1">
+    <tr><th>Name</th><th>Department</th></tr>
+    <tr ng-repeat="s in students">
+        <td>{{s.name}}</td>
+        <td>{{s.dept}}</td>
+    </tr>
+</table>
+
+<h3>Leave Status</h3>
+<select ng-model="status">
+    <option>Approve</option>
+    <option>Reject</option>
+    <option>Accept</option>
+</select>
+
+
+
+<script>
+var app = angular.module("app", []);
+
+app.filter("statusFilter", function() {
+    return function(status) {
+        if (status == "Approve")
+            return "Approved";
+        else if (status == "Deny")
+            return "Denied";
+        else
+            return "Rejected";
+    };
+});
+
+app.service("studentService", function() {
+    this.students = [];
+
+    this.add = function(name, dept) {
+        this.students.push({name:name, dept:dept});
+    };
+});
+
+app.controller("ctrl", function($scope, $http) {
+    $scope.students = [];
+    $scope.saving = false;
+
+    $http.get("/students").then(function(response) {
+        $scope.students = response.data;
+    }, function() {
+        $scope.msg = "Could not load students.";
+    });
+
+    $scope.save = function() {
+        $scope.saving = true;
+        $scope.msg = "";
+        $http.post("/save", {
+            name: $scope.name,
+            dept: $scope.dept
+        }).then(function(response) {
+            $scope.students.unshift(response.data);
+            $scope.name = "";
+            $scope.dept = "";
+            $scope.msg = "Saved successfully.";
+        }, function() {
+            $scope.msg = "Could not save student. Check the server and MongoDB connection.";
+        }).finally(function() {
+            $scope.saving = false;
+        });
+    };
+});
+</script>
+
+</body>
+</html>
+
+
